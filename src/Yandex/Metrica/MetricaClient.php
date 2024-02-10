@@ -104,26 +104,7 @@ class MetricaClient extends AbstractServiceClient
                 }
             }
 
-            if ($code === 400) {
-                throw new BadRequestException($message);
-            }
-
-            if ($code === 403) {
-                throw new ForbiddenException($message);
-            }
-
-            if ($code === 401) {
-                throw new UnauthorizedException($message);
-            }
-
-            if ($code === 429) {
-                throw new TooManyRequestsException($message);
-            }
-
-            throw new MetricaException(
-                'Service responded with error code: "' . $code . '" and message: "' . $message . '"',
-                $code
-            );
+            $this->throwExceptionByCode($code, $message);
         }
 
         return $response;
@@ -267,5 +248,39 @@ class MetricaClient extends AbstractServiceClient
         );
 
         return $this->getDecodedBody($response->getBody());
+    }
+
+    protected function getDecodedBody($body, $type = null)
+    {
+        $decodedBody = parent::getDecodedBody($body, $type);
+        $code = $decodedBody['code'] ?? 200;
+        if ($code >= 400) {
+            $this->throwExceptionByCode($code, $decodedBody['message'] ?? "error $code");
+        }
+        return $decodedBody;
+    }
+
+    protected function throwExceptionByCode($code, $message)
+    {
+        if ($code === 400) {
+            throw new BadRequestException($message);
+        }
+
+        if ($code === 403) {
+            throw new ForbiddenException($message);
+        }
+
+        if ($code === 401) {
+            throw new UnauthorizedException($message);
+        }
+
+        if ($code === 429) {
+            throw new TooManyRequestsException($message);
+        }
+
+        throw new MetricaException(
+            'Service responded with error code: "' . $code . '" and message: "' . $message . '"',
+            $code
+        );
     }
 }
